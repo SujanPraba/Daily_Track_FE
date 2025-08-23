@@ -14,6 +14,16 @@ export interface PaginatedResponse<T> extends ApiResponse<T> {
   };
 }
 
+export interface ProjectsApiResponse {
+  data: T[];
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+  hasNextPage: boolean;
+  hasPrevPage: boolean;
+}
+
 export interface QueryParams {
   search?: string;
   page?: number;

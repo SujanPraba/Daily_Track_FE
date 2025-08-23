@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { Plus, Edit2, Trash2, Shield, Users as UsersIcon, Briefcase } from 'lucide-react';
-import { useGetUsersQuery, useDeleteUserMutation } from '../../features/users/usersApi';
+import React, { useState, useEffect } from 'react';
+import { Plus, Edit2, Trash2, Shield, Users as UsersIcon, Briefcase, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useSearchUsersMutation, useDeleteUserMutation } from '../../features/users/usersApi';
 import { UserWithDetails } from '../../types/user';
 import DataTable from '../../components/Common/DataTable';
 import Button from '../../components/Common/Button';
@@ -12,14 +12,34 @@ import toast from 'react-hot-toast';
 
 const UsersListPage: React.FC = () => {
   const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
+  const [limit] = useState(10);
+  const [department, setDepartment] = useState<string>('');
+  const [position, setPosition] = useState<string>('');
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<UserWithDetails | null>(null);
   const [selectedUser, setSelectedUser] = useState<UserWithDetails | null>(null);
   const [isRolesDialogOpen, setIsRolesDialogOpen] = useState(false);
   const [isAssignmentsDialogOpen, setIsAssignmentsDialogOpen] = useState(false);
 
-  const { data: users, isLoading } = useGetUsersQuery({ search });
+  const [searchUsers, { data: usersResponse, isLoading }] = useSearchUsersMutation();
   const [deleteUser] = useDeleteUserMutation();
+
+  const users = usersResponse?.data || [];
+  const pagination = usersResponse;
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
+
+  useEffect(() => {
+    searchUsers({
+      searchTerm: search,
+      page,
+      limit,
+      department: department || undefined,
+      position: position || undefined,
+    }).finally(() => {
+      setIsInitialLoading(false);
+    });
+  }, [search, page, limit, department, position, searchUsers]);
 
   const handleDelete = async (user: UserWithDetails) => {
     if (window.confirm(`Are you sure you want to delete user "${user.firstName} ${user.lastName}"?`)) {
@@ -33,8 +53,8 @@ const UsersListPage: React.FC = () => {
   };
 
   const columns = [
-    { 
-      header: 'Name', 
+    {
+      header: 'Name',
       accessor: (user: UserWithDetails) => (
         <div>
           <div className="font-medium text-gray-900">
@@ -44,18 +64,38 @@ const UsersListPage: React.FC = () => {
         </div>
       )
     },
-    { 
-      header: 'Department', 
-      accessor: (user: UserWithDetails) => (
-        <div>
-          <div className="text-gray-900">{user.department || '-'}</div>
-          <div className="text-sm text-gray-500">{user.position || '-'}</div>
-        </div>
-      )
-    },
-    { header: 'Employee ID', accessor: 'employeeId' },
-    { 
-      header: 'Roles', 
+    // {
+    //   header: 'Department',
+    //   accessor: (user: UserWithDetails) => (
+    //     <div>
+    //       <div className="text-gray-900">{user.department || '-'}</div>
+    //       <div className="text-sm text-gray-500">{user.position || '-'}</div>
+    //     </div>
+    //   )
+    // },
+    { header: 'Employee ID', accessor: (user: UserWithDetails) => user.employeeId || '-' },
+    // {
+    //   header: 'Current Assignments',
+    //   accessor: (user: UserWithDetails) => (
+    //     <div className="space-y-1">
+    //       {user.projectRoles && user.projectRoles.length > 0 ? (
+    //         user.projectRoles.map((projectRole, index) => (
+    //           <div key={index} className="text-xs bg-gray-50 rounded px-2 py-1">
+    //             <div className="font-medium text-gray-900">{projectRole.projectName}</div>
+    //             <div className="text-gray-600">
+    //               {projectRole.roleName}
+    //               {projectRole.teamName && ` • ${projectRole.teamName}`}
+    //             </div>
+    //           </div>
+    //         ))
+    //       ) : (
+    //         <span className="text-gray-400 text-xs">No assignments</span>
+    //       )}
+    //     </div>
+    //   )
+    // },
+    {
+      header: 'Roles',
       accessor: (user: UserWithDetails) => (
         <Button
           variant="secondary"
@@ -70,24 +110,24 @@ const UsersListPage: React.FC = () => {
         </Button>
       )
     },
-    { 
-      header: 'Assignments', 
-      accessor: (user: UserWithDetails) => (
-        <Button
-          variant="secondary"
-          size="sm"
-          icon={Briefcase}
-          onClick={() => {
-            setSelectedUser(user);
-            setIsAssignmentsDialogOpen(true);
-          }}
-        >
-          View Assignments
-        </Button>
-      )
-    },
-    { 
-      header: 'Status', 
+    // {
+    //   header: 'Assignments',
+    //   accessor: (user: UserWithDetails) => (
+    //     <Button
+    //       variant="secondary"
+    //       size="sm"
+    //       icon={Briefcase}
+    //       onClick={() => {
+    //         setSelectedUser(user);
+    //         setIsAssignmentsDialogOpen(true);
+    //       }}
+    //     >
+    //       View Assignments
+    //     </Button>
+    //   )
+    // },
+    {
+      header: 'Status',
       accessor: (user: UserWithDetails) => (
         <div className="space-y-1">
           <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
@@ -103,8 +143,8 @@ const UsersListPage: React.FC = () => {
         </div>
       )
     },
-    { 
-      header: 'Actions', 
+    {
+      header: 'Actions',
       accessor: (user: UserWithDetails) => (
         <div className="flex space-x-2">
           <Button
@@ -137,13 +177,96 @@ const UsersListPage: React.FC = () => {
         </Button>
       </div>
 
+      {/* Filters */}
+      <div className="bg-white rounded-lg shadow p-6 space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Search</label>
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search users..."
+              className="block w-full rounded-lg py-2 px-3 border-gray-300 shadow-sm focus:ring-orange-500 focus:border-orange-500"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Department</label>
+            <input
+              type="text"
+              value={department}
+              onChange={(e) => setDepartment(e.target.value)}
+              placeholder="Department"
+              className="block w-full rounded-lg py-2 px-3 border-gray-300 shadow-sm focus:ring-orange-500 focus:border-orange-500"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Position</label>
+            <input
+              type="text"
+              value={position}
+              onChange={(e) => setPosition(e.target.value)}
+              placeholder="Position"
+              className="block w-full rounded-lg py-2 px-3 border-gray-300 shadow-sm focus:ring-orange-500 focus:border-orange-500"
+            />
+          </div>
+          <div className="flex items-end">
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setSearch('');
+                setDepartment('');
+                setPosition('');
+                setPage(1);
+              }}
+            >
+              Clear Filters
+            </Button>
+          </div>
+        </div>
+      </div>
+
       <DataTable
-        data={users?.data || []}
+        data={users}
         columns={columns}
-        isLoading={isLoading}
-        searchPlaceholder="Search users..."
-        onSearch={setSearch}
+        isLoading={isLoading || isInitialLoading}
       />
+
+      {/* Pagination */}
+      {pagination && (
+        <div className="bg-white rounded-lg shadow px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="text-sm text-gray-700">
+              Showing {((pagination.page - 1) * pagination.limit) + 1} to{' '}
+              {Math.min(pagination.page * pagination.limit, pagination.total)} of{' '}
+              {pagination.total} results
+            </div>
+            <div className="flex items-center space-x-2">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setPage(page - 1)}
+                disabled={!pagination.hasPrevPage}
+                icon={ChevronLeft}
+              >
+                Previous
+              </Button>
+              <span className="text-sm text-gray-700">
+                Page {pagination.page} of {pagination.totalPages}
+              </span>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setPage(page + 1)}
+                disabled={!pagination.hasNextPage}
+                icon={ChevronRight}
+              >
+                Next
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Create/Edit Dialog */}
       <Dialog
@@ -153,13 +276,23 @@ const UsersListPage: React.FC = () => {
           setEditingUser(null);
         }}
         title={editingUser ? 'Edit User' : 'Create User'}
-        size="xl"
+        size="fullscreen"
       >
         <UserForm
-          user={editingUser}
+          user={editingUser || undefined}
           onClose={() => {
             setIsCreateDialogOpen(false);
             setEditingUser(null);
+          }}
+          onSuccess={() => {
+            // Refresh users list after successful creation/update
+            searchUsers({
+              searchTerm: search,
+              page: page,
+              limit: limit,
+              department: department || undefined,
+              position: position || undefined,
+            });
           }}
         />
       </Dialog>
@@ -172,7 +305,7 @@ const UsersListPage: React.FC = () => {
           setSelectedUser(null);
         }}
         title={`${selectedUser?.firstName} ${selectedUser?.lastName} - Roles`}
-        size="lg"
+        // size="lg"
       >
         <UserRolesDialog
           user={selectedUser!}
@@ -191,7 +324,7 @@ const UsersListPage: React.FC = () => {
           setSelectedUser(null);
         }}
         title={`${selectedUser?.firstName} ${selectedUser?.lastName} - Assignments`}
-        size="xl"
+        size="2xl"
       >
         <UserAssignmentsDialog
           user={selectedUser!}

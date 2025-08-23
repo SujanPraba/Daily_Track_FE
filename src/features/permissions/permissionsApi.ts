@@ -1,7 +1,7 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import { RootState } from '../../app/store';
 import { Permission, CreatePermissionDto, UpdatePermissionDto } from '../../types/permission';
-import { ApiResponse } from '../../types';
+import { ApiResponse, ProjectsApiResponse } from '../../types';
 
 export const permissionsApi = createApi({
   reducerPath: 'permissionsApi',
@@ -23,6 +23,19 @@ export const permissionsApi = createApi({
         params,
       }),
       providesTags: ['Permissions'],
+    }),
+    searchPermissions: builder.mutation<ProjectsApiResponse<Permission>, {
+      searchTerm?: string;
+      page?: number;
+      limit?: number;
+      moduleId?: string;
+      action?: string;
+    }>({
+      query: (data) => ({
+        url: '/search',
+        method: 'POST',
+        body: data,
+      }),
     }),
     getPermissionById: builder.query<ApiResponse<Permission>, string>({
       query: (id) => `/${id}`,
@@ -59,6 +72,7 @@ export const permissionsApi = createApi({
 
 export const {
   useGetPermissionsQuery,
+  useSearchPermissionsMutation,
   useGetPermissionByIdQuery,
   useCreatePermissionMutation,
   useUpdatePermissionMutation,

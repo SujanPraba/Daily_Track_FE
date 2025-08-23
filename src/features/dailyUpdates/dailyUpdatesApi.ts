@@ -1,7 +1,12 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import { RootState } from '../../app/store';
-import { DailyUpdate, CreateDailyUpdateDto, UpdateDailyUpdateDto } from '../../types/dailyUpdate';
-import { ApiResponse } from '../../types';
+import { 
+  DailyUpdate, 
+  CreateDailyUpdateDto, 
+  UpdateDailyUpdateDto, 
+  DailyUpdateSearchParams,
+  DailyUpdateSearchResponse 
+} from '../../types/dailyUpdate';
 
 export const dailyUpdatesApi = createApi({
   reducerPath: 'dailyUpdatesApi',
@@ -17,21 +22,24 @@ export const dailyUpdatesApi = createApi({
   }),
   tagTypes: ['DailyUpdates'],
   endpoints: (builder) => ({
-    getDailyUpdates: builder.query<
-      ApiResponse<DailyUpdate[]>,
-      { userId?: string; projectId?: string; teamId?: string; startDate?: string; endDate?: string }
-    >({
+    // Search daily updates
+    searchDailyUpdates: builder.mutation<DailyUpdateSearchResponse, DailyUpdateSearchParams>({
       query: (params) => ({
-        url: '',
-        params,
+        url: '/search',
+        method: 'POST',
+        body: params,
       }),
-      providesTags: ['DailyUpdates'],
+      invalidatesTags: ['DailyUpdates'],
     }),
-    getDailyUpdateById: builder.query<ApiResponse<DailyUpdate>, string>({
+
+    // Get daily update by ID
+    getDailyUpdateById: builder.query<DailyUpdate, string>({
       query: (id) => `/${id}`,
       providesTags: (_result, _error, id) => [{ type: 'DailyUpdates', id }],
     }),
-    createDailyUpdate: builder.mutation<ApiResponse<DailyUpdate>, CreateDailyUpdateDto>({
+
+    // Create daily update
+    createDailyUpdate: builder.mutation<DailyUpdate, CreateDailyUpdateDto>({
       query: (data) => ({
         url: '',
         method: 'POST',
@@ -39,10 +47,9 @@ export const dailyUpdatesApi = createApi({
       }),
       invalidatesTags: ['DailyUpdates'],
     }),
-    updateDailyUpdate: builder.mutation<
-      ApiResponse<DailyUpdate>,
-      { id: string } & UpdateDailyUpdateDto
-    >({
+
+    // Update daily update
+    updateDailyUpdate: builder.mutation<DailyUpdate, { id: string } & UpdateDailyUpdateDto>({
       query: ({ id, ...data }) => ({
         url: `/${id}`,
         method: 'PATCH',
@@ -50,48 +57,29 @@ export const dailyUpdatesApi = createApi({
       }),
       invalidatesTags: (_result, _error, { id }) => [{ type: 'DailyUpdates', id }, 'DailyUpdates'],
     }),
-    deleteDailyUpdate: builder.mutation<ApiResponse<void>, string>({
+
+    // Delete daily update
+    deleteDailyUpdate: builder.mutation<void, string>({
       query: (id) => ({
         url: `/${id}`,
         method: 'DELETE',
       }),
       invalidatesTags: ['DailyUpdates'],
     }),
-    submitDailyUpdate: builder.mutation<ApiResponse<DailyUpdate>, string>({
-      query: (id) => ({
-        url: `/${id}/submit`,
-        method: 'POST',
-      }),
-      invalidatesTags: (_result, _error, id) => [{ type: 'DailyUpdates', id }, 'DailyUpdates'],
-    }),
-    approveDailyUpdate: builder.mutation<ApiResponse<DailyUpdate>, string>({
-      query: (id) => ({
-        url: `/${id}/approve`,
-        method: 'POST',
-      }),
-      invalidatesTags: (_result, _error, id) => [{ type: 'DailyUpdates', id }, 'DailyUpdates'],
-    }),
-    rejectDailyUpdate: builder.mutation<
-      ApiResponse<DailyUpdate>,
-      { id: string; reason: string }
-    >({
-      query: ({ id, reason }) => ({
-        url: `/${id}/reject`,
-        method: 'POST',
-        body: { reason },
-      }),
-      invalidatesTags: (_result, _error, { id }) => [{ type: 'DailyUpdates', id }, 'DailyUpdates'],
+
+    // Get all daily updates for a user
+    getUserDailyUpdates: builder.query<DailyUpdate[], string>({
+      query: (userId) => `?userId=${userId}`,
+      providesTags: ['DailyUpdates'],
     }),
   }),
 });
 
 export const {
-  useGetDailyUpdatesQuery,
+  useSearchDailyUpdatesMutation,
   useGetDailyUpdateByIdQuery,
   useCreateDailyUpdateMutation,
   useUpdateDailyUpdateMutation,
   useDeleteDailyUpdateMutation,
-  useSubmitDailyUpdateMutation,
-  useApproveDailyUpdateMutation,
-  useRejectDailyUpdateMutation,
+  useGetUserDailyUpdatesQuery,
 } = dailyUpdatesApi;

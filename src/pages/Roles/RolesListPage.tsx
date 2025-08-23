@@ -32,16 +32,16 @@ const RolesListPage: React.FC = () => {
 
   const columns = [
     { header: 'Name', accessor: 'name' },
-    { header: 'Level', accessor: (role: RoleWithPermissions) => (
-      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-        role.level === 'SUPER_ADMIN' ? 'bg-purple-100 text-purple-800' :
-        role.level === 'ADMIN' ? 'bg-red-100 text-red-800' :
-        role.level === 'MANAGER' ? 'bg-blue-100 text-blue-800' :
-        'bg-gray-100 text-gray-800'
-      }`}>
-        {role.level}
-      </span>
-    )},
+    // { header: 'Level', accessor: (role: RoleWithPermissions) => (
+    //   <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+    //     role.level === 'SUPER_ADMIN' ? 'bg-purple-100 text-purple-800' :
+    //     role.level === 'ADMIN' ? 'bg-red-100 text-red-800' :
+    //     role.level === 'MANAGER' ? 'bg-blue-100 text-blue-800' :
+    //     'bg-gray-100 text-gray-800'
+    //   }`}>
+    //     {role.level}
+    //   </span>
+    // )},
     { header: 'Description', accessor: 'description' },
     { header: 'Permissions', accessor: (role: RoleWithPermissions) => (
       <Button
@@ -95,8 +95,8 @@ const RolesListPage: React.FC = () => {
       </div>
 
       <DataTable
-        data={roles?.data || []}
-        columns={columns}
+        data={roles as any || []}
+        columns={columns as any}
         isLoading={isLoading}
         searchPlaceholder="Search roles..."
         onSearch={setSearch}
@@ -110,10 +110,11 @@ const RolesListPage: React.FC = () => {
           setEditingRole(null);
         }}
         title={editingRole ? 'Edit Role' : 'Create Role'}
-        size="lg"
+        // size="lg"
+        size="2xl"
       >
         <RoleForm
-          role={editingRole}
+          role={editingRole as RoleWithPermissions}
           onClose={() => {
             setIsCreateDialogOpen(false);
             setEditingRole(null);
@@ -129,7 +130,7 @@ const RolesListPage: React.FC = () => {
           setSelectedRole(null);
         }}
         title={`${selectedRole?.name} - Permissions`}
-        size="xl"
+        // size="xl"
       >
         <RolePermissionsDialog
           role={selectedRole!}

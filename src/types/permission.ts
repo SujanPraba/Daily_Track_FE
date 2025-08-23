@@ -1,19 +1,22 @@
+import { Module } from './module';
+
 export interface Permission {
   id: string;
   name: string;
   description?: string;
-  module: string;
-  action: string;
+  moduleId: string;
+  module: Module;
+  action?: string;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
+  moduleName: string;
 }
 
 export interface CreatePermissionDto {
   name: string;
   description?: string;
-  module: string;
-  action: string;
+  moduleId: string;
 }
 
 export interface UpdatePermissionDto extends Partial<CreatePermissionDto> {
@@ -38,5 +41,5 @@ export const ACTIONS = [
   'APPROVE',
 ] as const;
 
-export type Module = typeof MODULES[number];
+export type ModuleType = typeof MODULES[number];
 export type Action = typeof ACTIONS[number];

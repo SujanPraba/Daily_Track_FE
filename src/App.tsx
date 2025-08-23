@@ -3,21 +3,36 @@ import ProtectedRoute from './components/Auth/ProtectedRoute';
 import MainLayout from './components/Layout/MainLayout';
 import LoginPage from './pages/Auth/LoginPage';
 import DashboardPage from './pages/Dashboard/DashboardPage';
+import ProfilePage from './pages/Profile/ProfilePage';
 import UsersListPage from './pages/Users/UsersListPage';
 import ProjectsListPage from './pages/Projects/ProjectsListPage';
 import TeamsListPage from './pages/Teams/TeamsListPage';
 import DailyUpdatesPage from './pages/DailyUpdates/DailyUpdatesPage';
+import ModulesListPage from './pages/Modules/ModulesListPage';
+import ModulesViewPage from './pages/Modules/ModulesViewPage';
 import PermissionsListPage from './pages/Permissions/PermissionsListPage';
 import RolesListPage from './pages/Roles/RolesListPage';
 import ReportsPage from './pages/Reports/ReportsPage';
+import ConfigurationPage from './pages/Configuration/ConfigurationPage';
+import { useAppDispatch } from './app/store';
+import { fetchUserCompleteInformation } from './features/users/usersSlice';
+import { useEffect } from 'react';
+import DailyUpdateViewPage from './pages/DailyUpdates/DailyUpdateViewPage';
+import DailyUpdateEditPage from './pages/DailyUpdates/DailyUpdateEditPage';
 
 function App() {
+  const dispatch = useAppDispatch();
+
+  useEffect(() => {
+    dispatch(fetchUserCompleteInformation());
+  }, [dispatch]);
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Routes>
         {/* Public Routes */}
         <Route path="/auth/login" element={<LoginPage />} />
-        
+
         {/* Protected Routes */}
         <Route
           path="/"
@@ -27,10 +42,23 @@ function App() {
             </ProtectedRoute>
           }
         >
-          <Route index element={<Navigate to="/dashboard" replace />} />
-          
+          <Route index element={<Navigate to="/profile" replace />} />
+
+          {/* Profile - Default landing page */}
+          <Route path="profile" element={<ProfilePage />} />
+
           {/* Overview */}
           <Route path="dashboard" element={<DashboardPage />} />
+
+          {/* Configuration */}
+          <Route
+            path="configuration"
+            element={
+              <ProtectedRoute roles={['SUPER_ADMIN']}>
+                <ConfigurationPage />
+              </ProtectedRoute>
+            }
+          />
 
           {/* Project Management */}
           <Route
@@ -57,6 +85,22 @@ function App() {
               </ProtectedRoute>
             }
           />
+          <Route
+            path="daily-updates/:id/view"
+            element={
+              <ProtectedRoute roles={['SUPER_ADMIN', 'PROJECT_MANAGER', 'DEVELOPER']}>
+                <DailyUpdateViewPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="daily-updates/:id/edit"
+            element={
+              <ProtectedRoute roles={['SUPER_ADMIN', 'PROJECT_MANAGER', 'DEVELOPER']}>
+                <DailyUpdateEditPage />
+              </ProtectedRoute>
+            }
+          />
 
           {/* User Management */}
           <Route
@@ -64,6 +108,30 @@ function App() {
             element={
               <ProtectedRoute roles={['SUPER_ADMIN']}>
                 <UsersListPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="modules"
+            element={
+              <ProtectedRoute roles={['SUPER_ADMIN']}>
+                <ModulesListPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="modules/view-all"
+            element={
+              <ProtectedRoute roles={['SUPER_ADMIN']}>
+                <ModulesViewPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="modules/:id/view"
+            element={
+              <ProtectedRoute roles={['SUPER_ADMIN']}>
+                <ModulesViewPage />
               </ProtectedRoute>
             }
           />
@@ -86,10 +154,18 @@ function App() {
 
           {/* Reports */}
           <Route
+            path="reports"
+            element={
+              <ProtectedRoute roles={['SUPER_ADMIN', 'PROJECT_MANAGER']}>
+                <ReportsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="reports/projects"
             element={
               <ProtectedRoute roles={['SUPER_ADMIN', 'PROJECT_MANAGER']}>
-                <ReportsPage type="projects" />
+                <ReportsPage />
               </ProtectedRoute>
             }
           />
@@ -97,14 +173,14 @@ function App() {
             path="reports/teams"
             element={
               <ProtectedRoute roles={['SUPER_ADMIN', 'PROJECT_MANAGER']}>
-                <ReportsPage type="teams" />
+                <ReportsPage />
               </ProtectedRoute>
             }
           />
         </Route>
-        
+
         {/* Fallback route */}
-        <Route path="*" element={<Navigate to="/dashboard" replace />} />
+        <Route path="*" element={<Navigate to="/profile" replace />} />
       </Routes>
     </div>
   );

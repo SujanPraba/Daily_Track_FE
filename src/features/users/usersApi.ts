@@ -1,7 +1,7 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import { RootState } from '../../app/store';
-import { User, UserWithDetails, CreateUserDto, UpdateUserDto, UserAssignments } from '../../types/user';
-import { ApiResponse } from '../../types';
+import { User, UserWithDetails, CreateUserDto, UpdateUserDto, UserAssignments, UserAllInformation } from '../../types/user';
+import { ApiResponse, ProjectsApiResponse } from '../../types';
 
 export const usersApi = createApi({
   reducerPath: 'usersApi',
@@ -81,6 +81,23 @@ export const usersApi = createApi({
       query: (userId) => `/${userId}/assignments`,
       providesTags: (_result, _error, userId) => [{ type: 'Users', id: userId }],
     }),
+    searchUsers: builder.mutation<ProjectsApiResponse, {
+      searchTerm?: string;
+      page?: number;
+      limit?: number;
+      department?: string;
+      position?: string;
+    }>({
+      query: (data) => ({
+        url: '/search',
+        method: 'POST',
+        body: data,
+      }),
+    }),
+    getAllUsersInformation: builder.query<UserAllInformation[], void>({
+      query: () => '/all-information',
+      providesTags: ['Users'],
+    }),
   }),
 });
 
@@ -94,4 +111,6 @@ export const {
   useUpdateUserAssignmentsMutation,
   useGetUserRolesQuery,
   useGetUserAssignmentsQuery,
+  useSearchUsersMutation,
+  useGetAllUsersInformationQuery,
 } = usersApi;

@@ -78,11 +78,11 @@ const DashboardPage: React.FC = () => {
   ];
 
   const recentTransactions = [
-    { id: 'PAY-BD12093-SMG', product: 'Kpop Album Meow', details: '1 pcs - Free Poster', amount: '$247.59,8', status: 'Completed' },
+    { id: 'PAY-BD12093-SMG-1', product: 'Kpop Album Meow', details: '1 pcs - Free Poster', amount: '$247.59,8', status: 'Completed' },
     { id: 'PAY-98HY6G3-ENT', product: 'Photo Card Enhypen', details: '3 pcs - Free Tumblr', amount: '$761.77,2', status: 'Pending' },
     { id: 'PAY-1BQG093-JMB', product: 'Queencard Gidle', details: '1 pcs - Free Album Group', amount: '$415.9,7', status: 'Completed' },
     { id: 'PAY-98HY6G3-SBY', product: 'Concert Ticket Mujin', details: '8 pcs - Free Banner', amount: '$272.81,3', status: 'Completed' },
-    { id: 'PAY-BD12093-SMG', product: 'Kpop Album Blackpink', details: '2 pcs - Free Poster', amount: '$363.50,8', status: 'Completed' },
+    { id: 'PAY-BD12093-SMG-2', product: 'Kpop Album Blackpink', details: '2 pcs - Free Poster', amount: '$363.50,8', status: 'Completed' },
   ];
 
   const { user } = useAppSelector((state) => state.auth);

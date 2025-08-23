@@ -10,6 +10,11 @@ export interface Project {
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
+  roles?: Array<{
+    id: string;
+    name: string;
+    description?: string;
+  }>;
 }
 
 export interface CreateProjectDto {
@@ -20,10 +25,12 @@ export interface CreateProjectDto {
   status?: string;
   startDate?: string;
   endDate?: string;
+  roleIds?: string[];
 }
 
 export interface UpdateProjectDto extends Partial<CreateProjectDto> {
   isActive?: boolean;
+  roleIds?: string[];
 }
 
 export interface ProjectWithManager extends Project {

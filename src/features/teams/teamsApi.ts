@@ -1,7 +1,7 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import { RootState } from '../../app/store';
 import { Team, CreateTeamDto, UpdateTeamDto } from '../../types/team';
-import { ApiResponse } from '../../types';
+import { ApiResponse, ProjectsApiResponse, QueryParams } from '../../types';
 
 export const teamsApi = createApi({
   reducerPath: 'teamsApi',
@@ -17,10 +17,17 @@ export const teamsApi = createApi({
   }),
   tagTypes: ['Teams', 'TeamMembers'],
   endpoints: (builder) => ({
-    getTeams: builder.query<ApiResponse<Team[]>, { search?: string }>({
+    getTeams: builder.query<ProjectsApiResponse<Team>, QueryParams>({
       query: (params) => ({
-        url: '',
-        params,
+        url: '/search',
+        method: 'POST',
+        body: {
+          searchTerm: params.search || '',
+          page: params.page || 1,
+          limit: params.limit || 10,
+          projectId: params.projectId,
+          leadId: params.leadId,
+        },
       }),
       providesTags: ['Teams'],
     }),
@@ -69,6 +76,19 @@ export const teamsApi = createApi({
         { type: 'Teams', id: teamId },
       ],
     }),
+    searchTeams: builder.mutation<ProjectsApiResponse<Team>, {
+      searchTerm?: string;
+      page?: number;
+      limit?: number;
+      projectId?: string;
+      leadId?: string;
+    }>({
+      query: (data) => ({
+        url: '/search',
+        method: 'POST',
+        body: data,
+      }),
+    }),
   }),
 });
 
@@ -80,4 +100,5 @@ export const {
   useDeleteTeamMutation,
   useGetTeamMembersQuery,
   useUpdateTeamMembersMutation,
+  useSearchTeamsMutation,
 } = teamsApi;

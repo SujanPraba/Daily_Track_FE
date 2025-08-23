@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { Plus, Edit2, Trash2 } from 'lucide-react';
-import { useGetProjectsQuery, useDeleteProjectMutation } from '../../features/projects/projectsApi';
+import React, { useState, useEffect } from 'react';
+import { Plus, Edit2, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useDeleteProjectMutation, useSearchProjectsMutation } from '../../features/projects/projectsApi';
 import { ProjectWithManager } from '../../types/project';
 import DataTable from '../../components/Common/DataTable';
 import Button from '../../components/Common/Button';
@@ -10,11 +10,31 @@ import ProjectForm from './ProjectForm';
 
 const ProjectsListPage: React.FC = () => {
   const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
+  const [limit] = useState(10);
+  const [status, setStatus] = useState<string>('');
+  const [managerId, setManagerId] = useState<string>('');
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<ProjectWithManager | null>(null);
 
-  const { data: projects, isLoading } = useGetProjectsQuery({ search });
+  const [searchProjects, { data: projectsResponse, isLoading }] = useSearchProjectsMutation();
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [deleteProject] = useDeleteProjectMutation();
+
+  const projects = projectsResponse?.data || [];
+  const pagination = projectsResponse;
+
+  useEffect(() => {
+    searchProjects({
+      searchTerm: search,
+      page,
+      limit,
+      status: status || undefined,
+      managerId: managerId || undefined,
+    }).finally(() => {
+      setIsInitialLoading(false);
+    });
+  }, [search, page, limit, status, managerId, searchProjects]);
 
   const handleDelete = async (project: ProjectWithManager) => {
     if (window.confirm(`Are you sure you want to delete project "${project.name}"?`)) {
@@ -89,13 +109,100 @@ const ProjectsListPage: React.FC = () => {
         </Button>
       </div>
 
+      {/* Filters */}
+      <div className="bg-white rounded-lg shadow p-6 space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex items-end">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Search</label>
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search projects..."
+              className="block w-full rounded-lg py-2 px-3 border-gray-300 shadow-sm focus:ring-orange-500 focus:border-orange-500"
+            />
+          </div>
+          {/* <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
+            <select
+              value={status}
+              onChange={(e) => setStatus(e.target.value)}
+              className="block w-full rounded-lg border-gray-300 shadow-sm focus:ring-orange-500 focus:border-orange-500"
+            >
+              <option value="">All Statuses</option>
+              <option value="ACTIVE">Active</option>
+              <option value="COMPLETED">Completed</option>
+              <option value="ON_HOLD">On Hold</option>
+              <option value="CANCELLED">Cancelled</option>
+            </select>
+          </div> */}
+          {/* <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Manager ID</label>
+            <input
+              type="text"
+              value={managerId}
+              onChange={(e) => setManagerId(e.target.value)}
+              placeholder="Manager UUID"
+              className="block w-full rounded-lg border-gray-300 shadow-sm focus:ring-orange-500 focus:border-orange-500"
+            />
+          </div> */}
+          <div className="flex items-end">
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setSearch('');
+                setStatus('');
+                setManagerId('');
+                setPage(1);
+              }}
+            >
+              Clear Filters
+            </Button>
+          </div>
+        </div>
+      </div>
+
       <DataTable
-        data={projects || []}
+        data={projects}
         columns={columns}
-        isLoading={isLoading}
-        searchPlaceholder="Search projects..."
-        onSearch={setSearch}
+        isLoading={isLoading || isInitialLoading}
       />
+
+      {/* Pagination */}
+      {pagination && (
+        <div className="bg-white rounded-lg shadow px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="text-sm text-gray-700">
+              Showing {((pagination.page - 1) * pagination.limit) + 1} to{' '}
+              {Math.min(pagination.page * pagination.limit, pagination.total)} of{' '}
+              {pagination.total} results
+            </div>
+            <div className="flex items-center space-x-2">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setPage(page - 1)}
+                disabled={!pagination.hasPrevPage}
+                icon={ChevronLeft}
+              >
+                Previous
+              </Button>
+              <span className="text-sm text-gray-700">
+                Page {pagination.page} of {pagination.totalPages}
+              </span>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setPage(page + 1)}
+                disabled={!pagination.hasNextPage}
+                icon={ChevronRight}
+              >
+                Next
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <Dialog
         isOpen={isCreateDialogOpen || !!editingProject}
@@ -111,6 +218,17 @@ const ProjectsListPage: React.FC = () => {
           onClose={() => {
             setIsCreateDialogOpen(false);
             setEditingProject(null);
+          }}
+          onSuccess={() => {
+            setIsCreateDialogOpen(false);
+            setEditingProject(null);
+            searchProjects({
+              searchTerm: search,
+              page,
+              limit,
+              status: status || undefined,
+              managerId: managerId || undefined,
+            });
           }}
         />
       </Dialog>

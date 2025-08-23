@@ -1,7 +1,7 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import { RootState } from '../../app/store';
 import { Role, CreateRoleDto, UpdateRoleDto } from '../../types/role';
-import { ApiResponse } from '../../types';
+import { ApiResponse, ProjectsApiResponse } from '../../types';
 
 export const rolesApi = createApi({
   reducerPath: 'rolesApi',
@@ -17,7 +17,7 @@ export const rolesApi = createApi({
   }),
   tagTypes: ['Roles', 'RolePermissions'],
   endpoints: (builder) => ({
-    getRoles: builder.query<ApiResponse<Role[]>, { search?: string }>({
+    getRoles: builder.query<Role[], { search?: string; page?: number; limit?: number }>({
       query: (params) => ({
         url: '',
         params,
@@ -69,6 +69,24 @@ export const rolesApi = createApi({
         { type: 'Roles', id: roleId },
       ],
     }),
+    searchRoles: builder.mutation<ProjectsApiResponse<Role>, {
+      searchTerm?: string;
+      page?: number;
+      limit?: number;
+    }>({
+      query: (data) => ({
+        url: '/search',
+        method: 'POST',
+        body: data,
+      }),
+    }),
+    getRolesWithSearch: builder.query<ApiResponse<Role[]>, { search?: string; page?: number; limit?: number }>({
+      query: (params) => ({
+        url: '/search',
+        params,
+      }),
+      providesTags: ['Roles'],
+    }),
   }),
 });
 
@@ -80,4 +98,6 @@ export const {
   useDeleteRoleMutation,
   useGetRolePermissionsQuery,
   useUpdateRolePermissionsMutation,
+  useSearchRolesMutation,
+  useGetRolesWithSearchQuery,
 } = rolesApi;

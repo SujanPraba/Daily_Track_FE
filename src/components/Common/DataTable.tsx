@@ -48,7 +48,7 @@ function DataTable<T>({
                 <th
                   key={index}
                   scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  className="px-6 py-3 text-left text-[14px] font-medium text-gray-500 uppercase tracking-wider"
                 >
                   {column.header}
                 </th>
@@ -80,7 +80,7 @@ function DataTable<T>({
             ) : (
               data.map((item, rowIndex) => (
                 <tr
-                  key={rowIndex}
+                  key={typeof item === 'object' && item.id ? item.id : `row-${rowIndex}`}
                   className={classNames(
                     rowIndex % 2 === 0 ? 'bg-white' : 'bg-gray-50',
                     'hover:bg-gray-100'
@@ -88,8 +88,8 @@ function DataTable<T>({
                 >
                   {columns.map((column, colIndex) => (
                     <td
-                      key={colIndex}
-                      className="px-6 py-4 whitespace-nowrap text-sm text-gray-900"
+                      key={`${typeof item === 'object' && item.id ? item.id : `row-${rowIndex}`}-col-${colIndex}`}
+                      className="px-6 py-4 whitespace-nowrap text-[14px] text-gray-900"
                     >
                       {typeof column.accessor === 'function'
                         ? column.accessor(item)

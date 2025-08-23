@@ -24,11 +24,11 @@ const RolePermissionsDialog: React.FC<RolePermissionsDialogProps> = ({ role, onC
   const filteredPermissions = useMemo(() => {
     let filtered = permissions?.data || [];
     if (selectedModule) {
-      filtered = filtered.filter(p => p.module === selectedModule);
+      filtered = filtered.filter(p => p.moduleName === selectedModule);
     }
     if (search) {
       const searchLower = search.toLowerCase();
-      filtered = filtered.filter(p => 
+      filtered = filtered.filter(p =>
         p.name.toLowerCase().includes(searchLower) ||
         p.description?.toLowerCase().includes(searchLower)
       );
@@ -40,16 +40,16 @@ const RolePermissionsDialog: React.FC<RolePermissionsDialogProps> = ({ role, onC
   const groupedPermissions = useMemo(() => {
     const groups: Record<string, Permission[]> = {};
     filteredPermissions.forEach(permission => {
-      if (!groups[permission.module]) {
-        groups[permission.module] = [];
+      if (!groups[permission.moduleName]) {
+        groups[permission.moduleName] = [];
       }
-      groups[permission.module].push(permission);
+      groups[permission.moduleName].push(permission);
     });
     return groups;
   }, [filteredPermissions]);
 
   const handleTogglePermission = (permissionId: string) => {
-    setSelectedPermissions(prev => 
+    setSelectedPermissions(prev =>
       prev.includes(permissionId)
         ? prev.filter(id => id !== permissionId)
         : [...prev, permissionId]

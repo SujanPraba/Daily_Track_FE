@@ -1,7 +1,7 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import { RootState } from '../../app/store';
 import { Project, CreateProjectDto, UpdateProjectDto } from '../../types/project';
-import { ApiResponse } from '../../types';
+import { ApiResponse, PaginatedResponse, QueryParams, ProjectsApiResponse } from '../../types';
 
 export const projectsApi = createApi({
   reducerPath: 'projectsApi',
@@ -17,10 +17,17 @@ export const projectsApi = createApi({
   }),
   tagTypes: ['Projects', 'ProjectMembers'],
   endpoints: (builder) => ({
-    getProjects: builder.query<Project[], { search?: string }>({
+    getProjects: builder.query<ProjectsApiResponse<Project>, QueryParams>({
       query: (params) => ({
-        url: '',
-        params,
+        url: '/search',
+        method: 'POST',
+        body: {
+          searchTerm: params.search || '',
+          page: params.page || 1,
+          limit: params.limit || 10,
+          status: params.status,
+          managerId: params.managerId,
+        },
       }),
       providesTags: ['Projects'],
     }),
@@ -55,6 +62,19 @@ export const projectsApi = createApi({
       query: (projectId) => `/${projectId}/members`,
       providesTags: (_result, _error, projectId) => [{ type: 'ProjectMembers', id: projectId }],
     }),
+    searchProjects: builder.mutation<ProjectsApiResponse<Project>, {
+      searchTerm?: string;
+      page?: number;
+      limit?: number;
+      status?: string;
+      managerId?: string;
+    }>({
+      query: (data) => ({
+        url: '/search',
+        method: 'POST',
+        body: data,
+      }),
+    }),
     updateProjectMembers: builder.mutation<
       void,
       { projectId: string; userIds: string[] }
@@ -80,4 +100,5 @@ export const {
   useDeleteProjectMutation,
   useGetProjectMembersQuery,
   useUpdateProjectMembersMutation,
+  useSearchProjectsMutation,
 } = projectsApi;

@@ -1,6 +1,6 @@
 import { configureStore } from '@reduxjs/toolkit';
 import { TypedUseSelectorHook, useDispatch, useSelector } from 'react-redux';
-import authSlice from '../features/auth/authSlice';
+import authSlice, { setCredentials } from '../features/auth/authSlice';
 import usersSlice from '../features/users/usersSlice';
 import rolesSlice from '../features/roles/rolesSlice';
 import permissionsSlice from '../features/permissions/permissionsSlice';
@@ -14,6 +14,26 @@ import { permissionsApi } from '../features/permissions/permissionsApi';
 import { projectsApi } from '../features/projects/projectsApi';
 import { teamsApi } from '../features/teams/teamsApi';
 import { dailyUpdatesApi } from '../features/dailyUpdates/dailyUpdatesApi';
+import { modulesApi } from '../features/modules/modulesApi';
+
+// Function to restore user session from localStorage
+const restoreUserSession = () => {
+  try {
+    const token = localStorage.getItem('token');
+    const userStr = localStorage.getItem('user');
+    
+    if (token && userStr) {
+      const user = JSON.parse(userStr);
+      return { user, access_token: token };
+    }
+  } catch (error) {
+    console.error('Error restoring user session:', error);
+    // Clear corrupted data
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+  }
+  return null;
+};
 
 export const store = configureStore({
   reducer: {
@@ -31,6 +51,7 @@ export const store = configureStore({
     [projectsApi.reducerPath]: projectsApi.reducer,
     [teamsApi.reducerPath]: teamsApi.reducer,
     [dailyUpdatesApi.reducerPath]: dailyUpdatesApi.reducer,
+    [modulesApi.reducerPath]: modulesApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware().concat(
@@ -40,9 +61,18 @@ export const store = configureStore({
       permissionsApi.middleware,
       projectsApi.middleware,
       teamsApi.middleware,
-      dailyUpdatesApi.middleware
+      dailyUpdatesApi.middleware,
+      modulesApi.middleware
     ),
 });
+
+// Restore user session after store is created
+const sessionData = restoreUserSession();
+console.log('Store - Restored session data:', sessionData);
+if (sessionData) {
+  console.log('Store - Dispatching setCredentials with restored data');
+  store.dispatch(setCredentials(sessionData));
+}
 
 export type RootState = ReturnType<typeof store.getState>;
 export type AppDispatch = typeof store.dispatch;
