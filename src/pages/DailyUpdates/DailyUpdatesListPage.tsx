@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Filter, Calendar, Edit2, Trash2, Eye, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, Search, Filter, Calendar, Edit2, Trash2, Eye, ChevronLeft, ChevronRight, Settings, EyeOff } from 'lucide-react';
 import { useSearchDailyUpdatesMutation, useDeleteDailyUpdateMutation } from '../../features/dailyUpdates/dailyUpdatesApi';
 import { DailyUpdate, DailyUpdateSearchParams } from '../../types/dailyUpdate';
 import { useUserCompleteInformation } from '../../features/users/useUserCompleteInformation';
@@ -8,9 +8,10 @@ import Button from '../../components/Common/Button';
 import Dialog from '../../components/Common/Dialog';
 import DailyUpdateForm from './DailyUpdateForm';
 import toast from 'react-hot-toast';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 const DailyUpdatesListPage: React.FC = () => {
+  const navigate = useNavigate();
   const { userCompleteInformation } = useUserCompleteInformation();
   const { user } = useAppSelector((state) => state.auth);
 console.log("user",userCompleteInformation);
@@ -21,8 +22,18 @@ console.log("user",userCompleteInformation);
     limit: 10,
   });
 
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [editingUpdate, setEditingUpdate] = useState<DailyUpdate | null>(null);
+  const [showColumnSettings, setShowColumnSettings] = useState(false);
+  const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>({
+    date: true,
+    project: true,
+    team: true,
+    tickets: true,
+    hours: true,
+    status: true,
+    timeline: true,
+    actions: true,
+  });
 
   const [searchDailyUpdates, { data: searchResponse, isLoading }] = useSearchDailyUpdatesMutation();
   const [deleteDailyUpdate] = useDeleteDailyUpdateMutation();
@@ -61,14 +72,25 @@ console.log("update",dailyUpdates );
 
   const columns = [
     {
+      key: 'date',
       header: 'Date',
       accessor: (update: DailyUpdate) => (
         <div className="text-gray-900">
-          {new Date(update.date).toLocaleDateString()}
+          <div className="font-medium">{new Date(update.date).toLocaleDateString()}</div>
+          {parseFloat(update.leavePermissionHours || '0') > 0 && parseFloat(update.ticketsHours || '0') === 0 ? (
+            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 mt-1">
+              Leave Day
+            </span>
+          ) : (
+            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 mt-1">
+              Working Day
+            </span>
+          )}
         </div>
       )
     },
     {
+      key: 'project',
       header: 'Project',
       accessor: (update: DailyUpdate) => (
         <div className="text-gray-900">
@@ -77,32 +99,67 @@ console.log("update",dailyUpdates );
       )
     },
     {
+      key: 'team',
       header: 'Team',
       accessor: (update: DailyUpdate) => (
         <div className="text-gray-900">
-          {(update.teamName)}
+          <div className="font-medium">{update.teamName || '-'}</div>
+          {update.teamDescription && (
+            <div className="text-xs text-gray-500 mt-1">{update.teamDescription}</div>
+          )}
         </div>
       )
     },
     {
-      header: 'Tickets',
+      key: 'tickets',
+      header: 'Tickets & Activities',
       accessor: (update: DailyUpdate) => (
-        <div className="text-gray-900 max-w-xs truncate">
-          {update.tickets || '-'}
+        <div className="text-gray-900 max-w-xs">
+          {update.tickets ? (
+            <div className="text-sm">
+              <div className="font-medium text-gray-900">{update.tickets}</div>
+              {update.ticketsHours && parseFloat(update.ticketsHours) > 0 && (
+                <div className="text-xs text-gray-500">{update.ticketsHours}h</div>
+              )}
+            </div>
+          ) : update.otherActivities ? (
+            <div className="text-sm">
+              <div className="font-medium text-gray-900">{update.otherActivities}</div>
+            </div>
+          ) : (
+            <span className="text-gray-400 text-sm">-</span>
+          )}
         </div>
       )
     },
     {
+      key: 'hours',
       header: 'Hours',
       accessor: (update: DailyUpdate) => (
         <div className="text-sm text-gray-900">
-          <div>Internal: {update.internalMeetingHours}h</div>
-          <div>External: {update.externalMeetingHours}h</div>
-          <div>Other: {update.otherActivityHours}h</div>
+          <div className="font-semibold text-orange-600 mb-1">
+            Total: {update.totalHours || '0.00'}h
+          </div>
+          {parseFloat(update.ticketsHours || '0') > 0 && (
+            <div className="text-xs text-gray-600">Tickets: {update.ticketsHours}h</div>
+          )}
+          {parseFloat(update.internalMeetingHours || '0') > 0 && (
+            <div className="text-xs text-gray-600">Internal: {update.internalMeetingHours}h</div>
+          )}
+          {parseFloat(update.externalMeetingHours || '0') > 0 && (
+            <div className="text-xs text-gray-600">External: {update.externalMeetingHours}h</div>
+          )}
+          {parseFloat(update.otherActivityHours || '0') > 0 && (
+            <div className="text-xs text-gray-600">Other: {update.otherActivityHours}h</div>
+          )}
+          {parseFloat(update.leavePermissionHours || '0') > 0 && (
+            <div className="text-xs text-gray-600 text-blue-600">Leave: {update.leavePermissionHours}h</div>
+          )}
         </div>
       )
     },
     {
+      key: 'status',
       header: 'Status',
       accessor: (update: DailyUpdate) => (
         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
@@ -116,6 +173,22 @@ console.log("update",dailyUpdates );
       )
     },
     {
+      key: 'timeline',
+      header: 'Timeline',
+      accessor: (update: DailyUpdate) => (
+        <div className="text-xs text-gray-600 space-y-1">
+          <div>Created: {new Date(update.createdAt).toLocaleDateString()}</div>
+          {update.submittedAt && (
+            <div>Submitted: {new Date(update.submittedAt).toLocaleDateString()}</div>
+          )}
+          {update.approvedAt && (
+            <div className="text-green-600">Approved: {new Date(update.approvedAt).toLocaleDateString()}</div>
+          )}
+        </div>
+      )
+    },
+    {
+      key: 'actions',
       header: 'Actions',
       accessor: (update: DailyUpdate) => (
         <div className="flex space-x-2">
@@ -139,18 +212,84 @@ console.log("update",dailyUpdates );
     },
   ];
 
+  const filteredColumns = columns.filter(column => visibleColumns[column.key]);
+
+  const toggleColumn = (columnKey: string) => {
+    setVisibleColumns(prev => ({
+      ...prev,
+      [columnKey]: !prev[columnKey]
+    }));
+  };
+
+  const resetColumns = () => {
+    setVisibleColumns({
+      date: true,
+      project: true,
+      team: true,
+      tickets: true,
+      hours: true,
+      status: true,
+      timeline: true,
+      actions: true,
+    });
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-semibold text-gray-900">Daily Updates</h1>
-        <Button
-          variant="primary"
-          icon={Plus}
-          onClick={() => setIsCreateDialogOpen(true)}
-        >
-          Add Daily Update
-        </Button>
+        <div className="flex items-center space-x-3">
+          <Button
+            variant="secondary"
+            icon={Settings}
+            onClick={() => setShowColumnSettings(!showColumnSettings)}
+            className="text-gray-600 hover:text-gray-900"
+          >
+            Columns
+          </Button>
+          <Button
+            variant="primary"
+            icon={Plus}
+            onClick={() => navigate('/daily-updates/create')}
+          >
+            Add Daily Update
+          </Button>
+        </div>
       </div>
+
+      {/* Column Settings Panel */}
+      {showColumnSettings && (
+        <div className="bg-white rounded-lg shadow p-6 border border-gray-200">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-medium text-gray-900 flex items-center">
+              <Settings className="h-5 w-5 mr-2 text-gray-500" />
+              Column Visibility
+            </h3>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={resetColumns}
+              className="text-xs"
+            >
+              Reset to Default
+            </Button>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {columns.map((column) => (
+              <label key={column.key} className="flex items-center space-x-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={visibleColumns[column.key]}
+                  onChange={() => toggleColumn(column.key)}
+                  className="w-4 h-4 text-orange-600 bg-gray-100 border-gray-300 rounded focus:ring-orange-500 focus:ring-2"
+                />
+                <span className="text-sm text-gray-700">{column.header}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Filters */}
       <div className="bg-white rounded-lg shadow p-6 space-y-4">
@@ -248,6 +387,20 @@ console.log("update",dailyUpdates );
             />
           </div>
 
+          {/* Total Hours Filter */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Min Total Hours</label>
+            <input
+              type="number"
+              step="0.25"
+              min="0"
+              value={searchParams.minTotalHours || ''}
+              onChange={(e) => setSearchParams(prev => ({ ...prev, minTotalHours: e.target.value || undefined }))}
+              placeholder="0.00"
+              className="block w-full rounded-lg border-gray-300 shadow-sm focus:ring-orange-500 focus:border-orange-500"
+            />
+          </div>
+
           {/* Search Button */}
           <div className="flex items-end">
             <Button
@@ -283,7 +436,7 @@ console.log("update",dailyUpdates );
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                {columns.map((column, index) => (
+                {filteredColumns.map((column, index) => (
                   <th
                     key={index}
                     className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
@@ -296,20 +449,20 @@ console.log("update",dailyUpdates );
             <tbody className="bg-white divide-y divide-gray-200">
               {isLoading ? (
                 <tr>
-                  <td colSpan={columns.length} className="px-6 py-4 text-center">
+                  <td colSpan={filteredColumns.length} className="px-6 py-4 text-center">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500 mx-auto"></div>
                   </td>
                 </tr>
               ) : dailyUpdates.length === 0 ? (
                 <tr>
-                  <td colSpan={columns.length} className="px-6 py-4 text-center text-gray-500">
+                  <td colSpan={filteredColumns.length} className="px-6 py-4 text-center text-gray-500">
                     No daily updates found
                   </td>
                 </tr>
               ) : (
                 dailyUpdates.map((update: any) => (
                   <tr key={update.id} className="hover:bg-gray-50">
-                    {columns.map((column, index) => (
+                    {filteredColumns.map((column, index) => (
                       <td key={index} className="px-6 py-4 whitespace-nowrap">
                         {column.accessor(update)}
                       </td>
@@ -358,30 +511,25 @@ console.log("update",dailyUpdates );
         </div>
       )}
 
-      {/* Create/Edit Dialog */}
-      <Dialog
-        isOpen={isCreateDialogOpen || !!editingUpdate}
-        onClose={() => {
-          setIsCreateDialogOpen(false);
-          setEditingUpdate(null);
-        }}
-        title={editingUpdate ? 'Edit Daily Update' : 'Create Daily Update'}
-        size="lg"
-      >
-        <DailyUpdateForm
-          dailyUpdate={editingUpdate || undefined}
-          onClose={() => {
-            setIsCreateDialogOpen(false);
-            setEditingUpdate(null);
-          }}
-          onSuccess={() => {
-            // Refresh the list after successful creation/update
-            searchDailyUpdates(searchParams);
-            setIsCreateDialogOpen(false);
-            setEditingUpdate(null);
-          }}
-        />
-      </Dialog>
+      {/* Edit Dialog */}
+      {editingUpdate && (
+        <Dialog
+          isOpen={!!editingUpdate}
+          onClose={() => setEditingUpdate(null)}
+          title="Edit Daily Update"
+          size="lg"
+        >
+          <DailyUpdateForm
+            dailyUpdate={editingUpdate}
+            onClose={() => setEditingUpdate(null)}
+            onSuccess={() => {
+              // Refresh the list after successful update
+              searchDailyUpdates(searchParams);
+              setEditingUpdate(null);
+            }}
+          />
+        </Dialog>
+      )}
     </div>
   );
 };

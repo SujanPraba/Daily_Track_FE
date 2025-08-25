@@ -8,9 +8,10 @@ import Button from '../../components/Common/Button';
 import Dialog from '../../components/Common/Dialog';
 import DailyUpdateForm from './DailyUpdateForm';
 import toast from 'react-hot-toast';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 const DailyUpdatesListPage: React.FC = () => {
+  const navigate = useNavigate();
   const { userCompleteInformation } = useUserCompleteInformation();
   const { user } = useAppSelector((state) => state.auth);
 
@@ -20,7 +21,6 @@ const DailyUpdatesListPage: React.FC = () => {
     limit: 10,
   });
 
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [editingUpdate, setEditingUpdate] = useState<DailyUpdate | null>(null);
 
   // Dropdown states
@@ -133,7 +133,16 @@ const DailyUpdatesListPage: React.FC = () => {
       header: 'Date',
       accessor: (update: DailyUpdate) => (
         <div className="text-gray-900">
-          {new Date(update.date).toLocaleDateString()}
+          <div className="font-medium">{new Date(update.date).toLocaleDateString()}</div>
+          {parseFloat(update.leavePermissionHours || '0') > 0 && parseFloat(update.ticketsHours || '0') === 0 ? (
+            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 mt-1">
+              Leave Day
+            </span>
+          ) : (
+            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 mt-1">
+              Working Day
+            </span>
+          )}
         </div>
       )
     },
@@ -149,15 +158,31 @@ const DailyUpdatesListPage: React.FC = () => {
       header: 'Team',
       accessor: (update: DailyUpdate) => (
         <div className="text-gray-900">
-          {update.teamName}
+          <div className="font-medium">{update.teamName || '-'}</div>
+          {update.teamDescription && (
+            <div className="text-xs text-gray-500 mt-1">{update.teamDescription}</div>
+          )}
         </div>
       )
     },
     {
-      header: 'Tickets',
+      header: 'Tickets & Activities',
       accessor: (update: DailyUpdate) => (
-        <div className="text-gray-900 max-w-xs truncate">
-          {update.tickets || '-'}
+        <div className="text-gray-900 max-w-xs">
+          {update.tickets ? (
+            <div className="text-sm">
+              <div className="font-medium text-gray-900">{update.tickets}</div>
+              {update.ticketsHours && parseFloat(update.ticketsHours) > 0 && (
+                <div className="text-xs text-gray-500">{update.ticketsHours}h</div>
+              )}
+            </div>
+          ) : update.otherActivities ? (
+            <div className="text-sm">
+              <div className="font-medium text-gray-900">{update.otherActivities}</div>
+            </div>
+          ) : (
+            <span className="text-gray-400 text-sm">-</span>
+          )}
         </div>
       )
     },
@@ -165,9 +190,24 @@ const DailyUpdatesListPage: React.FC = () => {
       header: 'Hours',
       accessor: (update: DailyUpdate) => (
         <div className="text-sm text-gray-900">
-          <div>Internal: {update.internalMeetingHours}h</div>
-          <div>External: {update.externalMeetingHours}h</div>
-          <div>Other: {update.otherActivityHours}h</div>
+          <div className="font-semibold text-orange-600 mb-1">
+            Total: {update.totalHours || '0.00'}h
+          </div>
+          {parseFloat(update.ticketsHours || '0') > 0 && (
+            <div className="text-xs text-gray-600">Tickets: {update.ticketsHours}h</div>
+          )}
+          {parseFloat(update.internalMeetingHours || '0') > 0 && (
+            <div className="text-xs text-gray-600">Internal: {update.internalMeetingHours}h</div>
+          )}
+          {parseFloat(update.externalMeetingHours || '0') > 0 && (
+            <div className="text-xs text-gray-600">External: {update.externalMeetingHours}h</div>
+          )}
+          {parseFloat(update.otherActivityHours || '0') > 0 && (
+            <div className="text-xs text-gray-600">Other: {update.otherActivityHours}h</div>
+          )}
+          {parseFloat(update.leavePermissionHours || '0') > 0 && (
+            <div className="text-xs text-gray-600 text-blue-600">Leave: {update.leavePermissionHours}h</div>
+          )}
         </div>
       )
     },
@@ -182,6 +222,20 @@ const DailyUpdatesListPage: React.FC = () => {
         }`}>
           {update.status || 'DRAFT'}
         </span>
+      )
+    },
+    {
+      header: 'Timeline',
+      accessor: (update: DailyUpdate) => (
+        <div className="text-xs text-gray-600 space-y-1">
+          <div>Created: {new Date(update.createdAt).toLocaleDateString()}</div>
+          {update.submittedAt && (
+            <div>Submitted: {new Date(update.submittedAt).toLocaleDateString()}</div>
+          )}
+          {update.approvedAt && (
+            <div className="text-green-600">Approved: {new Date(update.approvedAt).toLocaleDateString()}</div>
+          )}
+        </div>
       )
     },
     {
@@ -215,7 +269,7 @@ const DailyUpdatesListPage: React.FC = () => {
         <Button
           variant="primary"
           icon={Plus}
-          onClick={() => setIsCreateDialogOpen(true)}
+          onClick={() => navigate('/daily-updates/create')}
         >
           Add Daily Update
         </Button>
@@ -717,30 +771,25 @@ const DailyUpdatesListPage: React.FC = () => {
         </div>
       )}
 
-      {/* Create/Edit Dialog */}
-      <Dialog
-        isOpen={isCreateDialogOpen || !!editingUpdate}
-        onClose={() => {
-          setIsCreateDialogOpen(false);
-          setEditingUpdate(null);
-        }}
-        title={editingUpdate ? 'Edit Daily Update' : 'Create Daily Update'}
-        size="lg"
-      >
-        <DailyUpdateForm
-          dailyUpdate={editingUpdate || undefined}
-          onClose={() => {
-            setIsCreateDialogOpen(false);
-            setEditingUpdate(null);
-          }}
-          onSuccess={() => {
-            // Refresh the list after successful creation/update
-            searchDailyUpdates(searchParams);
-            setIsCreateDialogOpen(false);
-            setEditingUpdate(null);
-          }}
-        />
-      </Dialog>
+      {/* Edit Dialog */}
+      {editingUpdate && (
+        <Dialog
+          isOpen={!!editingUpdate}
+          onClose={() => setEditingUpdate(null)}
+          title="Edit Daily Update"
+          size="lg"
+        >
+          <DailyUpdateForm
+            dailyUpdate={editingUpdate}
+            onClose={() => setEditingUpdate(null)}
+            onSuccess={() => {
+              // Refresh the list after successful update
+              searchDailyUpdates(searchParams);
+              setEditingUpdate(null);
+            }}
+          />
+        </Dialog>
+      )}
     </div>
   );
 };

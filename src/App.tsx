@@ -19,6 +19,7 @@ import { fetchUserCompleteInformation } from './features/users/usersSlice';
 import { useEffect } from 'react';
 import DailyUpdateViewPage from './pages/DailyUpdates/DailyUpdateViewPage';
 import DailyUpdateEditPage from './pages/DailyUpdates/DailyUpdateEditPage';
+import DailyUpdateCreatePage from './pages/DailyUpdates/DailyUpdateCreatePage';
 
 function App() {
   const dispatch = useAppDispatch();
@@ -82,6 +83,14 @@ function App() {
             element={
               <ProtectedRoute roles={['SUPER_ADMIN', 'PROJECT_MANAGER', 'DEVELOPER']}>
                 <DailyUpdatesPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="daily-updates/create"
+            element={
+              <ProtectedRoute roles={['SUPER_ADMIN', 'PROJECT_MANAGER', 'DEVELOPER']}>
+                <DailyUpdateCreatePage />
               </ProtectedRoute>
             }
           />
