@@ -33,11 +33,17 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
 
   const menuItems = [
 
+    // {
+    //   name: 'Dashboard',
+    //   href: '/dashboard',
+    //   icon: Home,
+    //   permission: canViewDashboard,
+    // },
     {
-      name: 'Dashboard',
-      href: '/dashboard',
-      icon: Home,
-      permission: canViewDashboard,
+      name: 'Daily Updates',
+      href: '/daily-updates',
+      icon: Calendar,
+      permission: canViewDailyUpdates,
     },
     {
       name: 'Reports',
@@ -45,17 +51,13 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
       icon: BarChart3,
       permission: canViewReports,
     },
+
+
     {
       name: 'Configuration',
       href: '/configuration',
       icon: Settings,
       permission: canViewConfiguration,
-    },
-    {
-      name: 'Daily Updates',
-      href: '/daily-updates',
-      icon: Calendar,
-      permission: canViewDailyUpdates,
     },
     {
       name: 'Profile',
